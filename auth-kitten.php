@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: ぬこ認証
+Plugin Name: 子猫認証
 Plugin URI: http://project-p.jp/halt/
-Description: コメント欄にぬこ認証を追加します。
+Description: コメント欄に子猫認証を追加します。プラグインをインストールした後、フォルダ内にあるviewer.phpをwordpressのindex.phpと同じディレクトリに配置してください。
 Version: 1.0.0
 Author: halt
 Author URI: http://project-p.jp/halt/
