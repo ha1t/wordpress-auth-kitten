@@ -39,8 +39,8 @@ function auth_kitten_verify($comment)
     $kitten = new Auth_Kitten();
     $result = $kitten->verify($_POST['kitten']);
 
-    if ($result === false) {
-        add_filter('pre_comment_approved', create_function('$a', 'return \'spam\';'));
+    if ($result !== true) {
+        wp_die('子猫認証に失敗しました。', 'Authentication failed', ['response' => 403]);
     }
 
     return $comment;
