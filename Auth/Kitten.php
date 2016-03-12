@@ -13,9 +13,10 @@
 class Auth_Kitten
 {
     private $image_path = "";
-    private $photos = array();
-    private $type = "checkbox";
 
+    /**
+     * @param array $options
+     */
     public function __construct($options = array())
     {
         $this->image_path = dirname(__FILE__) . "/Kitten/images/";
@@ -36,27 +37,20 @@ class Auth_Kitten
      */
     public function buildHtml($viewer_path)
     {
-        if (count($this->photos) == 0) {
-            $this->photos = $this->getPhotosJpg();
-        }
+        $photos = $this->getPhotosJpg();
 
-        if ($this->type == 'checkbox') {
-            $array = '[]';
-            $data  = "<input type=\"hidden\" name=\"kitten[code]\" value=\"" . $this->getHiddenPhrase() . "\" />\n";
-        } else {
-            $array = '';
-            $data  = "<input type=\"hidden\" name=\"kitten_code\" value=\"" . $this->getHiddenPhrase() . "\" />\n";
-        }
+        $array = '[]';
+        $data  = "<input type=\"hidden\" name=\"kitten[code]\" value=\"" . $this->getHiddenPhrase($photos) . "\" />\n";
 
         $i     = 1;
         $data .= "<table>\n<tr>\n";
 
-        foreach ($this->photos as $file => $type) {
+        foreach ($photos as $file => $type) {
             $data .= "<td>";
             $data .= "<label for=\"{$file}\">\n";
             $data .= "<img src=\"{$viewer_path}{$file}\" />";
             $data .= "<br />";
-            $data .= "<input id=\"{$file}\" type=\"{$this->type}\" name=\"kitten{$array}\" value=\"{$file}\" />\n";
+            $data .= "<input id=\"{$file}\" type=\"checkbox\" name=\"kitten{$array}\" value=\"{$file}\" />\n";
             $data .= "click!</label>\n";
             $data .= "</td>\n";
             if ($i % 3 == 0) {
@@ -68,37 +62,27 @@ class Auth_Kitten
         $data .= "</tr>\n</table>";
 
         return $data;
-        
     }
 
+    /**
+     * @return array
+     */
     private function getPhotosJpg()
     {
-        if ($this->type == "radio") {
-            $kittens = $this->getFileList($this->image_path . "kitten");
-            $kitten_key = array_rand($kittens);
-            $kitten = array($kittens[$kitten_key] => 'kitten');
+        $kittens = $this->getFileList($this->image_path . "kitten");
+        $others = $this->getFileList($this->image_path . "other");
 
-            $others = $this->getFileList($this->image_path . "other");
-            $other_keys = array_rand($others, 8);
-            $other = array();
-            foreach ($other_keys as $key) {
-                $other[$others[$key]] = "other";
-            }
-        } else {
-            $kittens = $this->getFileList($this->image_path . "kitten");
-            $kitten_keys = array_rand($kittens, 3);
-            $kitten = array();
-            foreach ($kitten_keys as $key) {
-                $kitten[$kittens[$key]] = "kitten";
-            }
+        $kitten_keys = array_rand($kittens, 3);
+        $kitten = array();
+        foreach ($kitten_keys as $key) {
+            $kitten[$kittens[$key]] = "kitten";
+        }
 
-            $others = $this->getFileList($this->image_path . "other");
-            $other_keys = array_rand($others, 6);
-            $other = array();
-            foreach ($other_keys as $key) {
-                $other[$others[$key]] = "other";
-            }
-         }
+        $other_keys = array_rand($others, 6);
+        $other = array();
+        foreach ($other_keys as $key) {
+            $other[$others[$key]] = "other";
+        }
 
         $photos = array_merge($kitten, $other);
 
@@ -109,85 +93,77 @@ class Auth_Kitten
 
         shuffle($buf);
 
+        $data = array();
         foreach ($buf as $photo) {
             $data[key($photo)] = $photo[key($photo)];
         }
-        
+
         return $data;
     }
 
     /**
-     * getFileList
+     * @param string $path
+     * @return array
      */
     private function getFileList($path)
     {
-        $dh  = opendir($path);
-        while (false !== ($filename = readdir($dh))) {
-            $files[] = $filename;
-        }
-
-        foreach ($files as $file) {
-            if (strpos($file, ".jpg")) {
-                $photos[] = $file;
-            }
-        }
-        return $photos;
+        return array_map('basename', glob($path . '/*.jpg'));
     }
 
-    public function drawImage($file)
+    /**
+     * エラーの場合、エラー画像を返す
+     * @param string $filename
+     */
+    public static function drawImage($filename)
     {
-        
-        $is_kitten = file_exists($this->image_path . "kitten/{$file}");
-        $is_other = file_exists($this->image_path . "other/{$file}");
+        $image_path = dirname(__FILE__) . "/Kitten/images/";
+        $is_kitten = file_exists($image_path . "kitten/{$filename}");
+        $is_other = file_exists($image_path . "other/{$filename}");
 
         header("Content-Type: image/jpg");
 
         if ($is_kitten || $is_other) {
-
             if ($is_kitten) {
-                $file = "kitten/" . $file;
+                $filename = "kitten/" . $filename;
             } else {
-                $file = "other/" . $file;
+                $filename = "other/" . $filename;
             }
-
-            readfile($this->image_path . $file);
-
+            readfile($image_path . $filename);
         } else {
-
-            readfile($this->image_path . "error.jpg");
-
+            readfile($image_path . "error.jpg");
         }
-        
     }
 
-    private function getHiddenPhrase()
+    /**
+     * @param array $photos
+     * @return string
+     */
+    private function getHiddenPhrase(array $photos)
     {
-        if ($this->type == "radio") {
-            $photos = array_flip($this->photos);
-            return md5($photos['kitten']);
-        } else {
-            $kittens = array_keys($this->photos, 'kitten');
-            sort($kittens);
-            return md5(implode('', $kittens));
-        }
+        $kittens = array_keys($photos, 'kitten');
+        sort($kittens);
+        return md5(implode('', $kittens));
     }
 
+    /**
+     * @param array $kitten
+     * @param string $phrase
+     * @return bool
+     */
     public function verify($kitten, $phrase = '')
     {
+        if (!is_array($kitten)) {
+            return false;
+        }
+
         if (isset($kitten['code']) && $phrase == '') {
             $phrase = $kitten['code'];
             unset($kitten['code']);
         }
 
-        if (is_array($kitten))  {
-            sort($kitten);
-            if(md5(implode('', $kitten)) == $phrase) {
-                return true;
-            }
-        } else if ($this->type == 'radio') {
-            if(md5($kitten) == $phrase) {
-                return true;
-            }
+        sort($kitten);
+        if(md5(implode('', $kitten)) == $phrase) {
+            return true;
         }
 
         return false;
